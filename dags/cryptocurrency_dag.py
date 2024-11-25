@@ -37,7 +37,7 @@ def fetch_binance_data(sector, symbol, start_date, end_date):
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
     df = df[['timestamp', 'open', 'close', 'volume']]
     
-    # 날짜, 심볼, 오픈 가격, 거래량만 반환
+    # 이름, 날짜, 시장 시작가, 종가, 거래량만 반환
     records = [
         [sector, row['timestamp'].strftime("%Y-%m-%d"), row['open'], row['close'], row['volume']]
         for _, row in df.iterrows()
@@ -122,7 +122,7 @@ with DAG(
     schedule='0 15 * * 0',
     max_active_runs=1,
 ) as dag:
-    # 자산 심볼 정의
+    # 가상화폐 심볼 정의
     symbols = {
         "비트코인": "BTCUSDT",
         "이더리움": "ETHUSDT",
