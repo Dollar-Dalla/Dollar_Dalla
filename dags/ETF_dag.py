@@ -83,7 +83,7 @@ def load(schema, table, records):
         cur.execute("BEGIN;")
         _create_table(cur, schema, table, False)
 
-        for r in records:
+        for _, r in records.iterrows():
             sql = f"""
                 INSERT INTO {schema}.{table} 
                 VALUES ('{r[0]}',
