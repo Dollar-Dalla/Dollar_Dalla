@@ -1,3 +1,6 @@
+# 테스트 무시
+tests/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
