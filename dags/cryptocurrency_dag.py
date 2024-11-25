@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.decorators import task
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.models import Variable
 
 from datetime import datetime
 from datetime import timedelta
@@ -138,4 +139,4 @@ with DAG(
     results = get_historical_prices(symbols, "{{ ds }}")
     
     # Redshift에 데이터 로드하는 task
-    load("rlawngh621", "cryptocurrency", results)
+    load(Variable.get("redshift_schema_name"), "cryptocurrency", results)
