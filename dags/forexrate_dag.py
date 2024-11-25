@@ -1,7 +1,7 @@
 from airflow import DAG
 from airflow.decorators import task
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 import yfinance as yf
@@ -15,11 +15,29 @@ def get_Redshift_connection(autocommit=True):
     return conn.cursor()
 
 
-@task
-def get_historical_prices(symbols, start_date, end_date):
-    records = []
-    all_dates = pd.date_range(start=start_date, end=end_date, freq='D').strftime("%Y-%m-%d").tolist()
+def get_date_range(start_date, end_date):
+    # start_date와 end_date는 문자열이므로 datetime으로 변환
+    start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+    end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
+    
+    # 날짜 범위 생성 (end_date는 포함되지 않도록 설정)
+    date_list = pd.date_range(start=start_date_obj, end=end_date_obj - timedelta(days=1)).strftime("%Y-%m-%d").tolist()
+    
+    return date_list
 
+
+@task
+def get_historical_prices(symbols, **context):
+    start_date = context['ds']
+    end_date = (datetime.strptime(start_date, "%Y-%m-%d") + timedelta(days=7)).strftime("%Y-%m-%d")
+    all_dates = get_date_range(start_date, end_date)
+    print("======================================")
+    print("start_date: ", start_date)
+    print("end_date = execution_date = ds: ", end_date)
+    print("all_dates: ", all_dates)
+    print("======================================")
+
+    records = []
     for name, symbol in symbols.items():
         ticket = yf.Ticker(symbol)
         data = ticket.history(start=start_date, end=end_date)
@@ -43,28 +61,37 @@ def get_historical_prices(symbols, start_date, end_date):
     return records
 
 
+def _create_table(cur, schema, table, drop_first):
+    if drop_first:
+        cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
+    cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS {schema}.{table} (
+            date date NOT NULL,
+            name varchar(20) NOT NULL,
+            open_value float,
+            close_value float,
+            volume bigint
+        );""")
+
+
 @task
 def load(schema, table, records):
     logging.info("load started")
     cur = get_Redshift_connection()
     try:
-        # full refresh
         cur.execute("BEGIN;")
-        cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
-        cur.execute(f"""
-        CREATE TABLE {schema}.{table} (
-            date date,
-            name varchar(20),
-            open_value float,
-            close_value float,
-            volume bigint
-        );""")
-        
+        _create_table(cur, schema, table, False)
+
         # 
         for r in records:
-            sql = f"INSERT INTO {schema}.{table} VALUES (%s, %s, %s, %s, %s);"
-            print(sql)
-            cur.execute(sql, r)
+            sql = f"""
+                INSERT INTO {schema}.{table} (date, name, open_value, close_value, volume)
+                SELECT %s, %s, %s, %s, %s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM {schema}.{table} WHERE date = %s AND name = %s 
+                );
+            """
+            cur.execute(sql, (*r, r[0], r[1]))
 
         cur.execute("COMMIT;")
 
@@ -77,11 +104,12 @@ def load(schema, table, records):
 
 
 with DAG(
-    dag_id = 'forex_rate',
-    start_date = datetime(2023,1,8),
-    catchup=False,
+    dag_id='forex_rate',
+    start_date=datetime(2023, 1, 1),
+    catchup=True,
     tags=['API'],
-    schedule = '0 15 * * 0'
+    schedule='0 15 * * 0',
+    max_active_runs=1, 
 ) as dag:
     # 자산 심볼 정의
     symbols = {
@@ -110,9 +138,5 @@ with DAG(
     "USD/RUB": "RUB=X", 
     }
 
-    start_date = "2023-01-01"
-    end_date = "{{ ds }}"
-
-    results = get_historical_prices(symbols, start_date, end_date)
+    results = get_historical_prices(symbols)
     load("eumjungmin1", "forex_rate", results)
-    
