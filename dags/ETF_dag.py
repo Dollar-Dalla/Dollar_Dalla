@@ -56,7 +56,6 @@ def get_historical_data(symbols):
         last_week_data = last_week_data.set_index("Date").reindex(full_date_range).reset_index()
         last_week_data.rename(columns={"index": "Date"}, inplace=True)
         last_week_data["sector"] = last_week_data["sector"].fillna(sec)
-        
         full_data = pd.concat([full_data, last_week_data])
     
     return full_data
@@ -83,14 +82,23 @@ def load(schema, table, records):
         cur.execute("BEGIN;")
         _create_table(cur, schema, table, False)
 
-        for _, r in records.iterrows():
-            sql = f"""
-                INSERT INTO {schema}.{table} 
-                VALUES ('{r[0]}',
-                        '{r[4]}',
-                        '{r[1]}',
-                        '{r[2]}',
-                        {r[3]});"""
+        for _, values in records.iterrows():
+            if pd.isna(values[1]):
+                sql = f"""
+                    INSERT INTO {schema}.{table}
+                    VALUES ({values[0],
+                            values[4],
+                            null,
+                            null,
+                            null});"""
+            else:
+                sql = f"""
+                    INSERT INTO {schema}.{table} 
+                    VALUES ({values[0]},
+                            {values[4]},
+                            {values[1]},
+                            {values[2]},
+                            {values[3]});"""
             print(sql)
             cur.execute(sql)
 
