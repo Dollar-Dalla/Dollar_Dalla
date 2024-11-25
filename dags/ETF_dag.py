@@ -86,16 +86,16 @@ def load(schema, table, records):
             if pd.isna(values[1]):
                 sql = f"""
                     INSERT INTO {schema}.{table}
-                    VALUES ({values[0],
-                            values[4],
+                    VALUES ('{datetime.date(values[0])}',
+                            '{values[4]}',
                             null,
                             null,
-                            null});"""
+                            null);"""
             else:
                 sql = f"""
                     INSERT INTO {schema}.{table} 
-                    VALUES ({values[0]},
-                            {values[4]},
+                    VALUES ('{datetime.date(values[0])}',
+                            '{values[4]}',
                             {values[1]},
                             {values[2]},
                             {values[3]});"""
