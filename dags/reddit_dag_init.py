@@ -67,4 +67,4 @@ with DAG(
             "git clone https://github.com/datavorous/YARS.git", # YARS 설치
             "pip install -y dbt-redshift uv requests Pygments" # dbt 및 yars 디펜던시
         )
-    ) 
+    )  
