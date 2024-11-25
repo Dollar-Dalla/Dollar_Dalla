@@ -18,8 +18,6 @@ def fetch_symbols_from_yahoo():
         
         # presuming name is nullable
         if symbol:
-            symbols.append({symbol.text.strip(): name.text.strip()})
+            symbols.append([symbol.text.strip(), name.text.strip()])
 
     return symbols
-
-print(fetch_symbols_from_yahoo())
