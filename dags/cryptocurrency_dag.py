@@ -22,7 +22,7 @@ def convert_to_unix_timestamp(date_string):
     return int(datetime.strptime(date_string, '%Y-%m-%d').timestamp() * 1000)
 
 
-def fetch_binance_data(sector, symbol, start_date, end_date):
+def fetch_binance_data(name, symbol, start_date, end_date):
     url = f'https://api.binance.com/api/v3/klines'
     params = {
         'symbol': symbol,
@@ -40,7 +40,7 @@ def fetch_binance_data(sector, symbol, start_date, end_date):
     
     # 이름, 날짜, 시장 시작가, 종가, 거래량만 반환
     records = [
-        [sector, row['timestamp'].strftime("%Y-%m-%d"), row['open'], row['close'], row['volume']]
+        [name, row['timestamp'].strftime("%Y-%m-%d"), row['open'], row['close'], row['volume']]
         for _, row in df.iterrows()
     ]
     
@@ -64,8 +64,8 @@ def get_historical_prices(symbols, sunday_date):
     start_date, end_date = get_start_and_end_of_week(sunday_date)
     
     records = []
-    for sector, symbol in symbols.items():
-        data = fetch_binance_data(sector, symbol, start_date=start_date, end_date=end_date)
+    for name, symbol in symbols.items():
+        data = fetch_binance_data(name, symbol, start_date=start_date, end_date=end_date)
         records.extend(data)
     
     return records
@@ -74,7 +74,7 @@ def get_historical_prices(symbols, sunday_date):
 def _create_table(cur, schema, table):
     cur.execute(f"""
         CREATE TABLE IF NOT EXISTS {schema}.{table} (
-            sector varchar(20) NOT NULL,
+            name varchar(20) NOT NULL,
             date date,
             open_value float,
             close_value float,
@@ -95,11 +95,11 @@ def load(schema, table, records):
         for r in records:
             # 중복 날짜가 아닐 경우에만 삽입
             sql = f"""
-                    INSERT INTO {schema}.{table} (sector, date, open_value, close_value, volume)
+                    INSERT INTO {schema}.{table} (name, date, open_value, close_value, volume)
                     SELECT '{r[0]}', '{r[1]}', ROUND({r[2]}, 2), ROUND({r[3]}, 2), {r[4]}
                     WHERE NOT EXISTS (
                         SELECT 1 FROM {schema}.{table}
-                        WHERE sector = '{r[0]}' AND date = '{r[1]}'
+                        WHERE name = '{r[0]}' AND date = '{r[1]}'
                     );
                     """
             print(sql)
