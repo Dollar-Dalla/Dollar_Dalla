@@ -61,9 +61,7 @@ def get_historical_data(symbols):
     return full_data
 
 
-def _create_table(cur, schema, table, drop_first):
-    if drop_first:
-        cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
+def _create_table(cur, schema, table):
     cur.execute(f"""
         CREATE TABLE IF NOT EXISTS {schema}.{table} (
             date date,
@@ -80,7 +78,7 @@ def load(schema, table, records):
     cur = get_Redshift_connection()
     try:
         cur.execute("BEGIN;")
-        _create_table(cur, schema, table, False)
+        _create_table(cur, schema, table)
 
         for _, values in records.iterrows():
             if pd.isna(values[1]):
