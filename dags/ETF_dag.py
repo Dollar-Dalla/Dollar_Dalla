@@ -18,7 +18,7 @@ def get_last_week_dates(execution_date_str):
     execution_date = datetime.strptime(execution_date_str, "%Y-%m-%d")
 
     start_date = execution_date - timedelta(days=6)
-    end_date = execution_date - timedelta(days=2)
+    end_date = execution_date - timedelta(days=1)
     
     return start_date, end_date
 
@@ -50,7 +50,7 @@ def get_historical_data(execution_date_str, symbols):
         last_week_data = fetch_ETF_data(sec, sym, st, en)
 
         last_week_data["Date"] = pd.to_datetime(last_week_data["Date"])
-        full_date_range = pd.date_range(start=st, end=en+timedelta(days=2), freq="D")
+        full_date_range = pd.date_range(start=st, end=en+timedelta(days=1), freq="D")
         last_week_data = last_week_data.set_index("Date").reindex(full_date_range).reset_index()
         last_week_data.rename(columns={"index": "Date"}, inplace=True)
         last_week_data["sector"] = last_week_data["sector"].fillna(sec)
