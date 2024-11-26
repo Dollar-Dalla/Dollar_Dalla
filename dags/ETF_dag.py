@@ -136,4 +136,4 @@ with DAG(
 }
     execution_date_str = '{{ ds }}'
     results = get_historical_data(execution_date_str, symbols)
-    load("musk82155", "ETF", results)
+    load(여기에 schema 입력, "ETF", results)
