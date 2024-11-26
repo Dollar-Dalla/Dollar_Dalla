@@ -29,13 +29,13 @@ def create_table(cur, schema, table, drop_first):
         );
         """)
 
-# 날짜 범위 태스크
+
+# 날짜 범위 계산 태스크
 @task
 def get_date_range(execution_date_str):
-    # execution_date 기준으로 지난 일주일 범위 계산
     execution_date = datetime.strptime(execution_date_str, "%Y-%m-%d")
     start_date = (execution_date - timedelta(days=6)).strftime("%Y-%m-%d")
-    end_date = execution_date.strftime("%Y-%m-%d")
+    end_date = (execution_date + timedelta(days=1)).strftime("%Y-%m-%d")  # 다음 날까지 포함
     return {"start_date": start_date, "end_date": end_date}
 
 
