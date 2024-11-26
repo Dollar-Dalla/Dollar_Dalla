@@ -7,14 +7,14 @@ import pandas as pd
 import yfinance as yf
 import logging
 
-
+# DB Connect
 def get_Redshift_connection(autocommit=True):
     hook = PostgresHook(postgres_conn_id='redshift_dev_db')
     conn = hook.get_conn()
     conn.autocommit = autocommit
     return conn.cursor()
 
-
+# Date range
 def get_date_range(start_date, end_date):
     # start_date와 end_date는 문자열이므로 datetime으로 변환
     start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
@@ -25,7 +25,7 @@ def get_date_range(start_date, end_date):
     
     return date_list
 
-
+# Task 1 Extract data
 @task
 def get_historical_prices(symbols, **context):
     start_date = context['ds']
@@ -55,7 +55,7 @@ def get_historical_prices(symbols, **context):
 
     return records
 
-
+# Create Table
 def _create_table(cur, schema, table, drop_first):
     if drop_first:
         cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
@@ -68,7 +68,7 @@ def _create_table(cur, schema, table, drop_first):
             volume bigint
         );""")
 
-
+# Task 2 Load data
 @task
 def load(schema, table, records):
     logging.info("load started")
