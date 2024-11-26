@@ -29,7 +29,7 @@ def create_table(cur, schema, table, drop_first):
         );
         """)
 
-# 날짜 범위
+# 날짜 범위 태스크
 @task
 def get_date_range(execution_date_str):
     # execution_date 기준으로 지난 일주일 범위 계산
