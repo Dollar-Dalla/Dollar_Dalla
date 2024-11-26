@@ -98,8 +98,8 @@ def load(schema, table, records):
 
 
 with DAG(
-    dag_id='cryptocurrency_day_dag55',
-    start_date=datetime(2024, 11, 22),
+    dag_id='cryptocurrency_day_dag',
+    start_date=datetime(2022, 12, 31),
     catchup=True,
     tags=['API'],
     schedule_interval='@daily',
