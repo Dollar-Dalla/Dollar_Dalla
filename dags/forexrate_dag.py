@@ -21,7 +21,7 @@ def get_date_range(start_date, end_date):
     end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
     
     # 날짜 범위 생성 (end_date는 포함되지 않도록 설정)
-    date_list = pd.date_range(start=start_date_obj, end=end_date_obj - timedelta(days=1)).strftime("%Y-%m-%d").tolist()
+    date_list = pd.date_range(start=start_date_obj, end=end_date_obj).strftime("%Y-%m-%d").tolist()
     
     return date_list
 
@@ -31,11 +31,6 @@ def get_historical_prices(symbols, **context):
     start_date = context['ds']
     end_date = (datetime.strptime(start_date, "%Y-%m-%d") + timedelta(days=7)).strftime("%Y-%m-%d")
     all_dates = get_date_range(start_date, end_date)
-    print("======================================")
-    print("start_date: ", start_date)
-    print("end_date = execution_date = ds: ", end_date)
-    print("all_dates: ", all_dates)
-    print("======================================")
 
     records = []
     for name, symbol in symbols.items():
