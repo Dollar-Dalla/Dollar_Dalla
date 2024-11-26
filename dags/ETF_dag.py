@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 
 import yfinance as yf
 import pandas as pd
-import numpy as np
 import logging
 
 def get_Redshift_connection(autocommit=True):
@@ -15,14 +14,13 @@ def get_Redshift_connection(autocommit=True):
     return conn.cursor()
 
 
-def get_last_week_dates():
-    today = datetime.today() 
-    weekday = today.weekday()
+def get_last_week_dates(execution_date_str):
+    execution_date = datetime.strptime(execution_date_str, "%Y-%m-%d")
 
-    last_friday = today - timedelta(days=weekday+3)
-    last_monday = last_friday - timedelta(days=4)
+    start_date = execution_date - timedelta(days=6)
+    end_date = execution_date - timedelta(days=2)
     
-    return last_monday, last_friday
+    return start_date, end_date
 
 
 def fetch_ETF_data(sector, symbol, start_date, end_date):
@@ -44,15 +42,15 @@ def fetch_ETF_data(sector, symbol, start_date, end_date):
 
 
 @task
-def get_historical_data(symbols):
+def get_historical_data(execution_date_str, symbols):
     full_data = pd.DataFrame()
     
     for sec, sym in symbols.items():
-        lm, lf = get_last_week_dates()
-        last_week_data = fetch_ETF_data(sec, sym, lm, lf)
-        
+        st, en = get_last_week_dates(execution_date_str)
+        last_week_data = fetch_ETF_data(sec, sym, st, en)
+
         last_week_data["Date"] = pd.to_datetime(last_week_data["Date"])
-        full_date_range = pd.date_range(start=last_week_data["Date"].min(), end=datetime.today().date(), freq="D")
+        full_date_range = pd.date_range(start=st, end=en+timedelta(days=2), freq="D")
         last_week_data = last_week_data.set_index("Date").reindex(full_date_range).reset_index()
         last_week_data.rename(columns={"index": "Date"}, inplace=True)
         last_week_data["sector"] = last_week_data["sector"].fillna(sec)
@@ -136,5 +134,6 @@ with DAG(
     "농업" : "MOO",
     "수송" : "IYT" 
 }
-    results = get_historical_data(symbols)
+    execution_date_str = '{{ ds }}'
+    results = get_historical_data(execution_date_str, symbols)
     load("musk82155", "ETF", results)
