@@ -17,8 +17,8 @@ def get_Redshift_connection(autocommit=True):
 def get_last_week_dates(execution_date_str):
     execution_date = datetime.strptime(execution_date_str, "%Y-%m-%d")
 
-    start_date = execution_date - timedelta(days=6)
-    end_date = execution_date - timedelta(days=1)
+    start_date = execution_date + timedelta(days=1)
+    end_date = execution_date + timedelta(days=6)
     
     return start_date, end_date
 
@@ -136,4 +136,4 @@ with DAG(
 }
     execution_date_str = '{{ ds }}'
     results = get_historical_data(execution_date_str, symbols)
-    load(여기에 schema 입력, "ETF", results)
+    load("musk82155", "ETF", results)
