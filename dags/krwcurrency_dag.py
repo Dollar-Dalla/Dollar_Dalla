@@ -34,13 +34,26 @@ def get_last_monday():
 
     return last_monday
 
+def get_next_monday():  # renamed function
+    # DAG 돌리는 시점의 date = Sunday
+    context = get_current_context()
+    execution_date = context['data_interval_start']
+
+    # Calculate days until next Monday (Monday = 0, Sunday = 6)
+    days_until_monday = (7 - execution_date.weekday()) % 7
+    next_monday = execution_date + timedelta(days=days_until_monday)
+
+    return next_monday
+
 def get_date_range():
-    last_monday = get_last_monday()
+    #last_monday = get_last_monday()
+    next_monday = get_next_monday()
     dates = []
     
     # Generate dates from Monday to Friday (5 days)
     for i in range(7):  # 0 to 6, representing Monday to Sunday
-        current_date = last_monday + timedelta(days=i)
+        #current_date = last_monday + timedelta(days=i)
+        current_date = next_monday + timedelta(days=i)
         dates.append(current_date.strftime("%Y-%m-%d"))
     
     return dates
@@ -107,7 +120,7 @@ def extract_koreaexim_currency(api_key):
                 'data': data
             })
 
-            time.sleep(1)  # Add a 1-second delay between requests
+            time.sleep(2)  # Add a 2-second delay between requests
 
         except Exception as e:
             # TODO: need to add error handling for airflow
@@ -136,10 +149,13 @@ def transform_koreaexim_currency(data):
             elif currency['cur_unit'] == 'EUR':
                 country_kr = '유럽'
                 name_kr = '유로'
-            else:
+            elif currency['cur_nm']:
                 name_parts = currency['cur_nm'].split(' ')
                 country_kr = name_parts[0]
                 name_kr = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
+            else:
+                country_kr = None
+                name_kr = None
             
             # Convert string values to float after removing commas
             ttb = float(currency['ttb'].replace(',', '')) if currency['ttb'] else None
