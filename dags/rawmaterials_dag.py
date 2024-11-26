@@ -2,12 +2,12 @@ from airflow import DAG
 from airflow.decorators import task
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from datetime import datetime, timedelta
-import yfinance as yf
+
 import pandas as pd
+import yfinance as yf
 import logging
 
 
-# DB 연결 함수
 def get_Redshift_connection(autocommit=True):
     hook = PostgresHook(postgres_conn_id='redshift_dev_db')
     conn = hook.get_conn()
@@ -15,95 +15,96 @@ def get_Redshift_connection(autocommit=True):
     return conn.cursor()
 
 
-# 테이블 생성 함수
-def create_table(cur, schema, table, drop_first):
-    if drop_first:
-        cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
-    cur.execute(f"""
-        CREATE TABLE IF NOT EXISTS {schema}.{table} (
-            date date,
-            name varchar(100),
-            open_value float,
-            close_value float,
-            volume bigint
-        );
-        """)
+def get_date_range(start_date, end_date):
+    # start_date와 end_date는 문자열이므로 datetime으로 변환
+    start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+    end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
+    
+    # 날짜 범위 생성 (end_date는 포함되지 않도록 설정)
+    date_list = pd.date_range(start=start_date_obj, end=end_date_obj).strftime("%Y-%m-%d").tolist()
+    
+    return date_list
 
 
-# 날짜 범위 계산 태스크
 @task
-def get_date_range(execution_date_str):
-    execution_date = datetime.strptime(execution_date_str, "%Y-%m-%d")
-    start_date = (execution_date - timedelta(days=6)).strftime("%Y-%m-%d")
-    end_date = (execution_date + timedelta(days=1)).strftime("%Y-%m-%d")  # 다음 날까지 포함
-    return {"start_date": start_date, "end_date": end_date}
+def get_historical_prices(symbols, **context):
+    start_date = context['ds']
+    end_date = (datetime.strptime(start_date, "%Y-%m-%d") + timedelta(days=7)).strftime("%Y-%m-%d")
+    all_dates = get_date_range(start_date, end_date)
 
-
-# 데이터 추출 태스크
-@task
-def get_historical_prices(symbols, date_range):
-    start_date = date_range["start_date"]
-    end_date = date_range["end_date"]
     records = []
     for name, symbol in symbols.items():
         ticket = yf.Ticker(symbol)
         data = ticket.history(start=start_date, end=end_date)
-
+        
+        fetched_dates = set()
         for index, row in data.iterrows():
+            date_str = index.strftime("%Y-%m-%d")
+            fetched_dates.add(date_str)
             records.append([
-                index.strftime("%Y-%m-%d"),  # Date
-                name,  # Asset name
-                row["Open"],
+                date_str,
+                name, 
+                row["Open"], 
                 row["Close"],
                 row["Volume"]
             ])
-    logging.info(f"Retrieved {len(records)} records for {start_date} to {end_date}")
+
+        missing_dates = set(all_dates) - fetched_dates
+        for missing_date in missing_dates:
+            records.append([missing_date, name, None, None, None])
+
     return records
 
 
-# 데이터 적재 태스크
+def _create_table(cur, schema, table, drop_first):
+    if drop_first:
+        cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
+    cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS {schema}.{table} (
+            date date NOT NULL,
+            name varchar(20) NOT NULL,
+            open_value float,
+            close_value float,
+            volume bigint
+        );""")
+
+
 @task
 def load(schema, table, records):
-    logging.info("Start load")
-    cur = get_Redshift_connection()  # Redshift DB 연결
+    logging.info("load started")
+    cur = get_Redshift_connection()
     try:
         cur.execute("BEGIN;")
-        # 테이블 생성
-        create_table(cur, schema, table, False)
+        _create_table(cur, schema, table, False)
 
-        # 레코드 삽입
+        # 
         for r in records:
-            # NaN 값 확인 및 NULL 처리
-            open_value = "NULL" if pd.isna(r[2]) else f"ROUND({r[2]}, 2)"
-            close_value = "NULL" if pd.isna(r[3]) else f"ROUND({r[3]}, 2)"
-            volume = "NULL" if pd.isna(r[4]) else f"{r[4]}"
-            
             sql = f"""
-                INSERT INTO {schema}.{table} (name, date, open_value, close_value, volume)
-                SELECT '{r[1]}', '{r[0]}', {open_value}, {close_value}, {volume}
+                INSERT INTO {schema}.{table} (date, name, open_value, close_value, volume)
+                SELECT %s, %s, %s, %s, %s
                 WHERE NOT EXISTS (
-                    SELECT 1
-                    FROM {schema}.{table}
-                    WHERE name = '{r[1]}' AND date = '{r[0]}'
+                    SELECT 1 FROM {schema}.{table} WHERE date = %s AND name = %s 
                 );
             """
-            cur.execute(sql)
+            cur.execute(sql, (*r, r[0], r[1]))
 
         cur.execute("COMMIT;")
+
     except Exception as error:
-        logging.error(error)
+        print(error)
         cur.execute("ROLLBACK;")
         raise
-    logging.info("End load")
+
+    logging.info("load done")
 
 
 with DAG(
-    dag_id='rawmaterials_dag',
+    dag_id='rawmaterials_dags',
     start_date=datetime(2023, 1, 1),
     catchup=True,
-    max_active_runs=1,
     tags=['API'],
-    schedule='0 15 * * 0'  # 매주 일요일 15:00 실행
+    schedule='0 15 * * 0',
+    max_active_runs=1, 
 ) as dag:
     # 자산 심볼 정의
     symbols = {
@@ -119,7 +120,5 @@ with DAG(
         "설탕": "SB=F"
     }
 
-    # 태스크 정의
-    date_range = get_date_range('{{ ds }}')  # Use `{{ ds }}` for execution_date in string format
-    results = get_historical_prices(symbols, date_range)
+    results = get_historical_prices(symbols)
     load("shyun0830", "rawmaterials", results)
