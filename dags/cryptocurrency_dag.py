@@ -52,10 +52,10 @@ def get_start_and_end_of_week(sunday_date):
     if isinstance(sunday_date, str):
         sunday_date = datetime.fromisoformat(sunday_date)
     
-    # 일요일 기준으로 다음 일요일 계산 -> 6으로 설정 시 마지막 실행에 대한 일요일 값이 없기에 일요일 값까지 스캐닝하고 중복 값 sql 조건 처리
+    next_monday = sunday_date + timedelta(days=1)
     next_sunday = sunday_date + timedelta(days=7)
     
-    return sunday_date.strftime("%Y-%m-%d"), next_sunday.strftime("%Y-%m-%d")
+    return next_monday.strftime("%Y-%m-%d"), next_sunday.strftime("%Y-%m-%d")
 
 
 @task
@@ -93,14 +93,9 @@ def load(schema, table, records):
         _create_table(cur, schema, table)
 
         for r in records:
-            # 중복 날짜가 아닐 경우에만 삽입
             sql = f"""
                     INSERT INTO {schema}.{table} (name, date, open_value, close_value, volume)
-                    SELECT '{r[0]}', '{r[1]}', ROUND({r[2]}, 2), ROUND({r[3]}, 2), {r[4]}
-                    WHERE NOT EXISTS (
-                        SELECT 1 FROM {schema}.{table}
-                        WHERE name = '{r[0]}' AND date = '{r[1]}'
-                    );
+                    VALUES ('{r[0]}', '{r[1]}', ROUND({r[2]}, 2), ROUND({r[3]}, 2), {r[4]});
                     """
             print(sql)
             cur.execute(sql)
