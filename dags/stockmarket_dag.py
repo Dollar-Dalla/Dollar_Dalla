@@ -12,7 +12,7 @@ import logging, ast
 CATCHUP = True
 ARGS = {
     'owner': 'airflow',
-    'start_date': datetime(2024, 11, 10),
+    'start_date': datetime(2023, 1, 1),
     'description': 'An ETL DAG for yfinance world indices data.',
     'trigger_rule': 'all_success',
 }
@@ -126,7 +126,7 @@ with DAG(
         python_callable=load,
         op_args=[
             'tunacome',
-            'test_stockmarket',
+            'fact_stockmarket',
             '{{ task_instance.xcom_pull(task_ids="process_yfinance_data") }}',
             CATCHUP
         ]
