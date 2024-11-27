@@ -157,22 +157,22 @@ Preset 내에서 쿼리를 사용하여 만든 분석 데이터</br>
   </tr>
   <tr>
     <td align="center">
-      <span></span>
+      <span>Crypto-currency DAG</br>Dashboard</br>Docker</br>Git</span>
     </td>
     <td align="center">
-      <span></span>
+      <span>World SM Indices DAG</br>Dashboard</br>Git</span>
     </td>
     <td align="center">
-      <span></span>
+      <span>ETF DAG</br>Dashboard</span>
     </td>
     <td align="center">
-      <span></span>
+      <span>KRW based exchange rate DAG</br>Dashboard</span>
     </td>
     <td align="center">
-      <span></span>
+      <span>Forex DAG</br>Dashboard</span>
     </td>
     <td align="center">
-      <span></span>
+      <span>Commodities DAG</br>Dashboard</span>
     </td>
   </tr>
 </table>
