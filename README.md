@@ -9,11 +9,11 @@
 ## Dollar Dalla
 **원자재 가격(금, 은, 석유 등), 환율, ETF, 세계 증시 지수, 암호화폐 관련 데이터를 추출하고 분석하여 시각화 하는 프로젝트입니다.** </br><span style="color:grey">This pipeline aims to extract, analyze, and visualize data related to commodity prices (e.g., gold, silver, oil), exchange rates, ETFs, global stock market indices, and cryptocurrencies.</span>
 
-<span style="color: black; display: block; background-color: lightgrey;">
+<h3 style="color: black; display: block; background-color: lightgrey;">
 
-### Features
+Features
 
-</span>
+</h3>
 <strong style="color:salmon">🎄 Dags</strong></br>
 ETF, 국제증시지수, 원자재, USD환율, KRW환율, 암호화폐 수집에 대한 각각의 Airflow Dag 파이썬 스크립트</br>
 <strong style="color:salmon">🎄 Tables</strong></br>
@@ -24,10 +24,10 @@ Preset 내에서 쿼리를 사용하여 만든 분석 데이터</br>
 
 <div style="text-align:center; border:1px solid black">
 
-**기본 차트**
+**기본 차트**</br>
 ![alt text](basic_charts.gif)
 </br>
-**분석 차트**
+**분석 차트**</br>
 ![alt text](joined_charts.gif)
 </div>
 
@@ -157,22 +157,22 @@ Preset 내에서 쿼리를 사용하여 만든 분석 데이터</br>
   </tr>
   <tr>
     <td align="center">
-      <span></span>
+      <span>Crypto-currency DAG</br>Dashboard</br>Docker</br>Git</span>
     </td>
     <td align="center">
-      <span></span>
+      <span>World SM Indices DAG</br>Dashboard</br>Git</span>
     </td>
     <td align="center">
-      <span></span>
+      <span>ETF DAG</br>Dashboard</span>
     </td>
     <td align="center">
-      <span></span>
+      <span>KRW based exchange rate DAG</br>Dashboard</span>
     </td>
     <td align="center">
-      <span></span>
+      <span>Forex DAG</br>Dashboard</span>
     </td>
     <td align="center">
-      <span></span>
+      <span>Commodities DAG</br>Dashboard</span>
     </td>
   </tr>
 </table>
